@@ -14,6 +14,7 @@ const ViewTypes = {
   HALF_RIGHT: 2
 };
 
+// Generate a hexadecimal randomColor
 function getRandomColor() {
   var letters = "0123456789ABCDEF";
   var color = "#";
@@ -75,14 +76,16 @@ export default class RecycleTestComponent extends React.Component<
     this.onGestureEvent = event([
       {
         nativeEvent: {
-          absoluteY: this.offY,
-          state: this.gestureState
+          absoluteY: this.offY, // the absolute Y value
+          state: this.gestureState // current gesture state
         }
       }
     ]);
 
+    // It subtracts the middle of rowHeight / 2
     this.y = add(this.offY, new Value(-this.rowHeight / 2));
 
+    // Get the full layout size and height for 70px
     this._layoutProvider = new LayoutProvider(
       index => {
         return ViewTypes.FULL;
@@ -95,8 +98,10 @@ export default class RecycleTestComponent extends React.Component<
 
     this._rowRenderer = this._rowRenderer.bind(this);
 
+    // Generate a array
     const arr = this._generateArray(300);
 
+    // Returns a data which is diferent from the previous to the next
     let dataProvider = new DataProvider((r1, r2) => {
       return r1 !== r2;
     });
@@ -108,6 +113,7 @@ export default class RecycleTestComponent extends React.Component<
     };
   }
 
+  // Generate a array of random Colors
   _generateArray(n) {
     return Array.from(Array(n), (_, i) => {
       colorMap[i] = getRandomColor();
@@ -115,6 +121,7 @@ export default class RecycleTestComponent extends React.Component<
     });
   }
 
+  // nope means that it is being dragged down
   _rowRenderer(type, data, index, _, nope) {
     nope = !!nope;
     return (
@@ -150,6 +157,7 @@ export default class RecycleTestComponent extends React.Component<
     );
   }
 
+  // Calculate the corrent absolute Y Index, and makes sure that doesnt goes under zero
   yToIndex = (y: number) =>
     Math.min(
       this.state.dataProvider.getSize() - 1,
@@ -170,11 +178,13 @@ export default class RecycleTestComponent extends React.Component<
     this.scrolling = false;
   };
 
+  // It starts the dragging state
   start = ([y]) => {
     this.currIdx = this.yToIndex(y);
     this.setState({ dragging: true, draggingIdx: this.currIdx });
   };
 
+  // Updates and reorder things
   updateOrder = y => {
     const newIdx = this.yToIndex(y);
     if (this.currIdx !== newIdx) {
@@ -209,12 +219,14 @@ export default class RecycleTestComponent extends React.Component<
   };
 
   move = ([y]) => {
+    // Move to the botton with defined threshold
     if (y + 100 > this.flatlistHeight) {
-      if (!this.scrolling) {
-        this.scrolling = true;
-        this.moveList(20);
-      }
-    } else if (y < 100) {
+		if (!this.scrolling) {
+			this.scrolling = true;
+			this.moveList(20);
+		}
+		// Move to the top with defined threshold
+	} else if (y < 100) {
       if (!this.scrolling) {
         this.scrolling = true;
         this.moveList(-20);
@@ -222,84 +234,84 @@ export default class RecycleTestComponent extends React.Component<
     } else {
       this.scrolling = false;
     }
-    this.updateOrder(y);
+    this.updateOrder(y); // Reorder the items list update
   };
 
   render() {
     const { dragging, dataProvider, draggingIdx } = this.state;
 
     return (
-      <SafeAreaView style={{ flex: 1 }}>
-        <Animated.Code>
-          {() =>
-            cond(
-              eq(this.gestureState, State.BEGAN),
-              call([this.offY], this.start)
-            )
-          }
-        </Animated.Code>
-        <Animated.Code>
-          {() =>
-            cond(
-              or(
-                eq(this.gestureState, State.END),
-                eq(this.gestureState, State.CANCELLED),
-                eq(this.gestureState, State.FAILED),
-                eq(this.gestureState, State.UNDETERMINED)
-              ),
-              call([], this.reset)
-            )
-          }
-        </Animated.Code>
-        <Animated.Code>
-          {() =>
-            cond(
-              eq(this.gestureState, State.ACTIVE),
-              call([this.offY], this.move)
-            )
-          }
-        </Animated.Code>
-        {dragging ? (
-          <Animated.View
-            style={{
-              top: this.y,
-              position: "absolute",
-              width: "100%",
-              zIndex: 99,
-              elevation: 99
-            }}
-          >
-            {this._rowRenderer(
-              -1,
-              dataProvider.getDataForIndex(draggingIdx),
-              -1,
-              -1,
-              true
-            )}
-          </Animated.View>
-        ) : null}
-        <View
-          ref={this.listContainer}
-          style={{ flex: 1 }}
-          onLayout={e => {
-            this.flatlistHeight = e.nativeEvent.layout.height;
-            this.listContainer.current.measureInWindow((_x, y) => {
-              this.topOffset = y;
-            });
-          }}
-        >
-          <RecyclerListView
-            ref={this.list}
-            style={{ flex: 1 }}
-            onScroll={e => {
-              this.scrollOffset = e.nativeEvent.contentOffset.y;
-            }}
-            layoutProvider={this._layoutProvider}
-            dataProvider={dataProvider}
-            rowRenderer={this._rowRenderer}
-          />
-        </View>
-      </SafeAreaView>
-    );
+		<SafeAreaView style={{ flex: 1 }}>
+			<Animated.Code>
+				{() =>
+					cond(
+						eq(this.gestureState, State.BEGAN), // When some scenario has begun
+						call([this.offY], this.start) // call this start
+					)
+				}
+			</Animated.Code>
+			<Animated.Code>
+				{() =>
+					cond(
+						or(
+							eq(this.gestureState, State.END),
+							eq(this.gestureState, State.CANCELLED),
+							eq(this.gestureState, State.FAILED),
+							eq(this.gestureState, State.UNDETERMINED)
+						),
+						call([], this.reset) // Reset when each of theses scenarios occur
+					)
+				}
+			</Animated.Code>
+			<Animated.Code>
+				{() =>
+					cond(
+						eq(this.gestureState, State.ACTIVE), // When active
+						call([this.offY], this.move) // Move the item component
+					)
+				}
+			</Animated.Code>
+      {/* When dragging it renders the component with node as white label, changing the top absolute y position */}
+			{dragging ? (
+				<Animated.View
+					style={{
+						top: this.y, // It reposition while dragging
+						position: "absolute",
+						width: "100%",
+						zIndex: 99,
+						elevation: 99,
+					}}>
+					{this._rowRenderer(
+						-1,
+						dataProvider.getDataForIndex(draggingIdx),
+						-1,
+						-1,
+						true
+					)}
+				</Animated.View>
+			) : null}
+			<View
+				ref={this.listContainer}
+				style={{ flex: 1 }}
+				onLayout={(e) => {
+					this.flatlistHeight = e.nativeEvent.layout.height;
+					this.listContainer.current.measureInWindow((_x, y) => {
+						this.topOffset = y;
+					});
+				}}>
+				{/* ref - Reference the whole list element */}
+				<RecyclerListView
+					ref={this.list}
+					style={{ flex: 1 }}
+					onScroll={(e) => {
+						this.scrollOffset = e.nativeEvent.contentOffset.y; // Scroll based on the list ref, on the y axis
+					}}
+					layoutProvider={this._layoutProvider} // Constructor function that defines the layout (height / width) of each element
+					dataProvider={dataProvider} // Constructor function the defines the data for each element
+					rowRenderer={this._rowRenderer} // Method that returns react component to be rendered. You get the type, data, index and extendedState of the view in the callback
+				/>
+			</View>
+		</SafeAreaView>
+	);
   }
 }
